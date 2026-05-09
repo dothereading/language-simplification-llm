@@ -35,11 +35,15 @@ uv run python distill.py sft --n 200
 # 2. Generate DPO pairs (weaker teacher produces 'rejected' completions)
 uv run python distill.py dpo --teacher google/gemma-3-4b-it
 
-# 3. Convert to mlx-lm format
+# 3. (one time) Carve a frozen held-out evaluation set. The eval prompts
+#    are then automatically excluded from every train/valid split below.
+uv run python mlx_data.py carve-eval --n 30
+
+# 4. Convert to mlx-lm format
 uv run python mlx_data.py sft
 uv run python mlx_data.py dpo
 
-# 4. Train (from repo root)
+# 5. Train (from repo root)
 bash scripts/train_mlx.sh         # SFT
 bash scripts/train_dpo_mlx.sh     # DPO, resumes from SFT adapter
 ```

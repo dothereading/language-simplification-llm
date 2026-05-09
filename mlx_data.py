@@ -13,6 +13,7 @@ The shared helpers (`to_mlx_sft_record`, `to_mlx_dpo_record`,
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import random
 from pathlib import Path
@@ -20,6 +21,105 @@ from pathlib import Path
 from prompts import SFT_SYSTEM_PROMPT
 
 REPO_ROOT = Path(__file__).resolve().parent
+DEFAULT_EVAL_PATH = REPO_ROOT / "data" / "eval.jsonl"
+
+
+# ---------- hash-based split assignment ----------
+
+def assign_split(key: str, valid_frac: float, seed: int = 0) -> str:
+    """Deterministic train/valid bucket for a key.
+
+    Same `key` + `seed` always returns the same bucket. Used so that:
+      * SFT and DPO derive identical valid sets (they share source prompts);
+      * Adding new prompts to the dataset later doesn't shuffle existing
+        assignments (key membership is stable).
+    """
+    h = hashlib.sha256(f"{seed}:{key}".encode()).hexdigest()
+    bucket = int(h[:8], 16) / (1 << 32)
+    return "valid" if bucket < valid_frac else "train"
+
+
+def select_eval_keys(keys: list[str], n: int, seed: int = 0) -> list[str]:
+    """Pick `n` keys to hold out as eval prompts, stably under dataset growth.
+
+    Sorts by hash and takes the top n. Adding more keys later only changes
+    the eval set if a new key happens to hash *lower* than one of the
+    existing top-n — which is rare for reasonable n.
+    """
+    return sorted(keys, key=lambda k: hashlib.sha256(f"eval:{seed}:{k}".encode()).hexdigest())[:n]
+
+
+def carve_eval(source_path: Path, output_path: Path, n: int, seed: int = 0) -> int:
+    """Write n eval records (deterministic) to output_path. Returns count.
+
+    Source file is left untouched — the eval records still appear in the
+    source dataset. Splitting code (`prepare_sft_splits`, `prepare_dpo_splits`)
+    filters them out at training-data prep time.
+    """
+    rows = _read_jsonl(source_path)
+    keys = [r["complex"] for r in rows]
+    eval_keys = set(select_eval_keys(keys, n=n, seed=seed))
+    eval_rows = [r for r in rows if r["complex"] in eval_keys]
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, "w") as f:
+        for r in eval_rows:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    return len(eval_rows)
+
+
+def load_eval_prompts(eval_path: Path) -> set[str]:
+    """Set of prompt strings to exclude from training. Empty if file missing.
+
+    Reads either schema: SFT-shaped (`complex` field) or DPO-shaped (`prompt`).
+    """
+    if not eval_path.exists():
+        return set()
+    out: set[str] = set()
+    for r in _read_jsonl(eval_path):
+        if "complex" in r:
+            out.add(r["complex"])
+        elif "prompt" in r:
+            out.add(r["prompt"])
+    return out
+
+
+def prepare_sft_splits(
+    rows: list[dict],
+    eval_prompts: set[str],
+    valid_frac: float,
+    seed: int = 0,
+) -> tuple[list[dict], list[dict]]:
+    """Filter eval prompts out of SFT rows and assign train/valid by hash."""
+    train: list[dict] = []
+    valid: list[dict] = []
+    for r in rows:
+        if r["complex"] in eval_prompts:
+            continue
+        if assign_split(r["complex"], valid_frac, seed) == "valid":
+            valid.append(r)
+        else:
+            train.append(r)
+    return train, valid
+
+
+def prepare_dpo_splits(
+    rows: list[dict],
+    eval_prompts: set[str],
+    valid_frac: float,
+    seed: int = 0,
+) -> tuple[list[dict], list[dict]]:
+    """DPO version of prepare_sft_splits — uses `prompt` as the join key."""
+    train: list[dict] = []
+    valid: list[dict] = []
+    for r in rows:
+        if r["prompt"] in eval_prompts:
+            continue
+        if assign_split(r["prompt"], valid_frac, seed) == "valid":
+            valid.append(r)
+        else:
+            train.append(r)
+    return train, valid
 
 
 def to_mlx_sft_record(complex_text: str, simple_text: str) -> dict:
@@ -83,7 +183,11 @@ def _sft_main(args: argparse.Namespace) -> None:
         rng.shuffle(rows)
         rows = rows[: args.n]
 
-    train, valid = split_train_valid(rows, args.valid_frac, args.seed)
+    eval_prompts = load_eval_prompts(Path(args.eval_path))
+    if eval_prompts:
+        print(f"excluding {len(eval_prompts)} eval prompts from {args.eval_path}")
+
+    train, valid = prepare_sft_splits(rows, eval_prompts, args.valid_frac, args.seed)
     out_dir = Path(args.output_dir)
     _write_split(out_dir, "train", [to_mlx_sft_record(r["complex"], r["simple"]) for r in train])
     _write_split(out_dir, "valid", [to_mlx_sft_record(r["complex"], r["simple"]) for r in valid])
@@ -91,7 +195,11 @@ def _sft_main(args: argparse.Namespace) -> None:
 
 def _dpo_main(args: argparse.Namespace) -> None:
     rows = _read_jsonl(Path(args.input))
-    train, valid = split_train_valid(rows, args.valid_frac, args.seed)
+    eval_prompts = load_eval_prompts(Path(args.eval_path))
+    if eval_prompts:
+        print(f"excluding {len(eval_prompts)} eval prompts from {args.eval_path}")
+
+    train, valid = prepare_dpo_splits(rows, eval_prompts, args.valid_frac, args.seed)
     out_dir = Path(args.output_dir)
     _write_split(
         out_dir, "train",
@@ -101,6 +209,18 @@ def _dpo_main(args: argparse.Namespace) -> None:
         out_dir, "valid",
         [to_mlx_dpo_record(r["prompt"], r["chosen"], r["rejected"]) for r in valid],
     )
+
+
+def _carve_main(args: argparse.Namespace) -> None:
+    out = Path(args.output)
+    if out.exists() and not args.force:
+        raise SystemExit(
+            f"{out} already exists. The eval set is meant to be FROZEN — "
+            f"re-rolling it would silently invalidate every prior comparison. "
+            f"Pass --force only if you really mean to."
+        )
+    n = carve_eval(Path(args.input), out, n=args.n, seed=args.seed)
+    print(f"wrote {n} eval records → {out}")
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -113,12 +233,25 @@ def _build_parser() -> argparse.ArgumentParser:
     sft.add_argument("--n", type=int, default=0, help="0 = use all rows")
     sft.add_argument("--valid-frac", type=float, default=0.1)
     sft.add_argument("--seed", type=int, default=0)
+    sft.add_argument("--eval-path", default=str(DEFAULT_EVAL_PATH),
+                     help="path to held-out eval JSONL whose prompts will be excluded from train/valid")
 
     dpo = sub.add_parser("dpo", help="convert data/dpo.jsonl → data/dpo_mlx/{train,valid}.jsonl")
     dpo.add_argument("--input", default=str(REPO_ROOT / "data" / "dpo.jsonl"))
     dpo.add_argument("--output-dir", default=str(REPO_ROOT / "data" / "dpo_mlx"))
     dpo.add_argument("--valid-frac", type=float, default=0.1)
     dpo.add_argument("--seed", type=int, default=0)
+    dpo.add_argument("--eval-path", default=str(DEFAULT_EVAL_PATH),
+                     help="path to held-out eval JSONL whose prompts will be excluded from train/valid")
+
+    carve = sub.add_parser("carve-eval",
+                           help="freeze a held-out evaluation set (refuses to overwrite without --force)")
+    carve.add_argument("--input", default=str(REPO_ROOT / "data" / "sft.jsonl"))
+    carve.add_argument("--output", default=str(DEFAULT_EVAL_PATH))
+    carve.add_argument("--n", type=int, default=30)
+    carve.add_argument("--seed", type=int, default=0)
+    carve.add_argument("--force", action="store_true",
+                       help="overwrite existing eval set (strongly discouraged)")
     return p
 
 
@@ -128,6 +261,8 @@ def main() -> None:
         _sft_main(args)
     elif args.cmd == "dpo":
         _dpo_main(args)
+    elif args.cmd == "carve-eval":
+        _carve_main(args)
 
 
 if __name__ == "__main__":

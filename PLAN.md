@@ -14,8 +14,8 @@ Fine-tune a small Gemma model to perform language simplification, transforming c
 *   [x] DPO preference dataset: 194 triples in `data/dpo.jsonl`.
 *   [x] **Distillation prompt iterated**: dropped low-info detail aggressively, killed redundant cappers, raised A2-floor guidance, encouraged adult register and concept-first ordering. A/B test on a fixed 10-paragraph sample showed length-ratio score 0.957→0.982 and judge A2 hit-rate 6/10→7/10.
 *   [x] **Data-quality validator** (`dataset_audit.py`): flags `length_inflated`, `monotonous`, `too_easy`, `too_hard` per record; reports aggregates.
-*   [ ] Carve a frozen evaluation set out of `data/sft.jsonl` *before* generating any more data, so the eval prompts never appear in training. SFT and DPO splits must agree on which prompts go to which split.
-*   [ ] Grow SFT dataset (target ≥1k pairs) to combat the val-loss climb seen in the current run.
+*   [x] **Held-out eval set carved** — `data/eval.jsonl` (30 records). `mlx_data.py carve-eval` is deterministic (hash-based) and refuses to overwrite without `--force`. Splits use hash-based assignment (`assign_split`) so the same prompt always lands in the same bucket — SFT-valid and DPO-valid are guaranteed to contain the same prompts (verified: 16/16 overlap, 0 overlap with eval).
+*   [ ] Grow SFT dataset (target ≥1k pairs) to combat the val-loss climb seen in the current run. New rows generated after this point use the iterated prompt; eval set stays frozen.
 
 ### Phase 2: Supervised Fine-Tuning (SFT)
 *   **Engine:** mlx-lm LoRA (`scripts/train_mlx.sh`).
