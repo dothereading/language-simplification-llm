@@ -1,5 +1,7 @@
 # Language Simplification Fine-Tuning
 
+![alt text](simple_lm_banner.jpg)
+
 Fine-tune a small Gemma model to rewrite complex English at **CEFR A2** (Elementary) level. See [`PLAN.md`](PLAN.md) for the staged pipeline (data → SFT → DPO → GRPO → eval) and [`CLAUDE.md`](CLAUDE.md) for the development conventions used in this repo.
 
 ## Layout
