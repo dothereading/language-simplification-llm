@@ -9,9 +9,9 @@ We deliberately reuse `verifier.DifficultyRankingTest` as the judge so the
 eval signal is identical to the reward signal we'll use for GRPO later.
 
 Usage:
-    uv run python eval_harness.py --adapter base
-    uv run python eval_harness.py --adapter adapters/sft-a2
-    uv run python eval_harness.py --adapter adapters/dpo-a2 --output eval_results/dpo.json
+    uv run python -m langsimp.inference.eval_harness --adapter base
+    uv run python -m langsimp.inference.eval_harness --adapter adapters/sft-a2
+    uv run python -m langsimp.inference.eval_harness --adapter adapters/dpo-a2 --output eval_results/dpo.json
 
 Requires LM Studio running with the judge model loaded.
 """
@@ -24,14 +24,14 @@ from pathlib import Path
 from statistics import mean
 from typing import Callable, Optional
 
-from inference import build_prompt, clean_generation, load_model_with_adapter, make_generate_fn
-from verifier import DifficultyRankingTest, LocalJudge
+from langsimp.inference.engine import build_prompt, clean_generation, load_model_with_adapter, make_generate_fn
+from langsimp.verifier import DifficultyRankingTest, LocalJudge
 
 # Re-export so existing imports (`from eval_harness import build_eval_prompt`,
 # tests, etc.) keep working without churn.
 build_eval_prompt = build_prompt
 
-REPO_ROOT = Path(__file__).resolve().parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_EVAL_PATH = REPO_ROOT / "data" / "eval.jsonl"
 DEFAULT_RESULTS_DIR = REPO_ROOT / "eval_results"
 

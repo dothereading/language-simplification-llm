@@ -4,9 +4,9 @@ Useful for ad-hoc qualitative review or debugging individual outputs without
 involving the eval harness or judge.
 
 Usage:
-    uv run python generate.py --adapter base "Complex text here..."
-    uv run python generate.py --adapter adapters/sft/latest --file input.txt
-    cat input.txt | uv run python generate.py --adapter adapters/sft/latest
+    uv run python -m langsimp.inference.generate --adapter base "Complex text here..."
+    uv run python -m langsimp.inference.generate --adapter adapters/sft/latest --file input.txt
+    cat input.txt | uv run python -m langsimp.inference.generate --adapter adapters/sft/latest
 
 Multi-paragraph input (file or stdin) is split on blank lines and each
 paragraph is generated separately.
@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 from typing import Optional, TextIO
 
-REPO_ROOT = Path(__file__).resolve().parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _split_paragraphs(text: str) -> list[str]:
@@ -91,7 +91,7 @@ def main() -> int:
     paragraphs = read_input(args.text, Path(args.file) if args.file else None, stdin)
 
     # Late import so --help works even if mlx-lm has issues.
-    from inference import load_model_with_adapter, make_generate_fn
+    from langsimp.inference.engine import load_model_with_adapter, make_generate_fn
     adapter_path = None if args.adapter == "base" else args.adapter
     model, tokenizer = load_model_with_adapter(args.model, adapter_path)
     gen = make_generate_fn(model, tokenizer, max_tokens=args.max_tokens)

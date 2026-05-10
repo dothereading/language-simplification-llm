@@ -3,11 +3,11 @@
 # `chosen`  = Opus simplification (from data/sft.jsonl)
 # `rejected` = Gemma-3-4B simplification (from data/dpo.jsonl)
 #
-# Routes through train.py so loss / accuracy / reward margin land in
+# Routes through langsimp.training.runner so loss / accuracy / reward margin land in
 # Weights & Biases live.
 #
 # Run from the repo root:
-#   uv run python mlx_data.py dpo
+#   uv run python -m langsimp.data.mlx_format dpo
 #   bash scripts/train_dpo_mlx.sh
 #
 # Env-var overrides (any subset):
@@ -34,4 +34,4 @@ if [[ -n "${ADAPTER_DIR:-}" ]]; then
     ARGS+=(--adapter-path "$ADAPTER_DIR")
 fi
 
-uv run python train.py "${ARGS[@]}"
+uv run python -m langsimp.training.runner "${ARGS[@]}"

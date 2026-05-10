@@ -6,8 +6,8 @@ metrics to Weights & Biases in real time.
 
 Two subcommands mirroring the previous shell scripts:
 
-    uv run python train.py sft  --model ... --data data/mlx     --iters 300 ...
-    uv run python train.py dpo  --model ... --data data/dpo_mlx --iters 300 --beta 0.1 ...
+    uv run python -m langsimp.training.runner sft  --model ... --data data/mlx     --iters 300 ...
+    uv run python -m langsimp.training.runner dpo  --model ... --data data/dpo_mlx --iters 300 --beta 0.1 ...
 
 Offline-safe: if WANDB_API_KEY is missing or WANDB_MODE=disabled, training
 runs without W&B and prints a one-line note. Training never breaks because
@@ -28,7 +28,7 @@ from typing import Callable, Optional
 
 from dotenv import load_dotenv
 
-REPO_ROOT = Path(__file__).resolve().parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(REPO_ROOT / ".env")
 
 
@@ -566,7 +566,7 @@ def _build_parser() -> argparse.ArgumentParser:
     grpo.add_argument("--resume-adapter", default="adapters/dpo/latest/adapters.safetensors",
                       help="resume from this adapter file (silently ignored if missing)")
     grpo.add_argument("--reward-functions", default="length_reward,vocab_reward,meaning_reward")
-    grpo.add_argument("--reward-functions-file", default=str(REPO_ROOT / "rewards.py"))
+    grpo.add_argument("--reward-functions-file", default=str(REPO_ROOT / "langsimp" / "training" / "rewards.py"))
     grpo.add_argument("--reward-weights", default="[0.25,0.25,0.50]",
                       help="JSON list, must match the order/length of --reward-functions")
     grpo.add_argument("--group-size", type=int, default=2,

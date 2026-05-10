@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-import dataset_audit as da
-from verifier import BaseJudge
+import langsimp.data.audit as da
+from langsimp.verifier import BaseJudge
 
 
 class StubJudge(BaseJudge):

@@ -24,14 +24,14 @@ from collections import Counter
 from pathlib import Path
 from typing import Optional
 
-from verifier import (
+from langsimp.verifier import (
     BaseJudge,
     LocalJudge,
     PacingVarietyTest,
     length_ratio_score,
 )
 
-REPO_ROOT = Path(__file__).resolve().parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 LENGTH_SOFT_CAP = 1.3
 PACING_THRESHOLD = 0.4

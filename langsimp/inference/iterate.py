@@ -5,9 +5,9 @@ the OpenRouter teacher N times with `DISTILL_SYSTEM_PROMPT`, prints each
 output, and scores each one with the local CEFR verifier.
 
 Usage:
-    uv run python iterate.py --runs 4
-    uv run python iterate.py --runs 4 --seed 42
-    uv run python iterate.py --runs 4 --paragraph-file my_paragraph.txt
+    uv run python -m langsimp.inference.iterate --runs 4
+    uv run python -m langsimp.inference.iterate --runs 4 --seed 42
+    uv run python -m langsimp.inference.iterate --runs 4 --paragraph-file my_paragraph.txt
 """
 from __future__ import annotations
 
@@ -16,12 +16,12 @@ import asyncio
 import json
 from pathlib import Path
 
-from distill import Teacher
-from prompts import DISTILL_SYSTEM_PROMPT
-from sources import fetch_random_paragraphs
-from verifier import DifficultyRankingTest, LocalJudge, RewardVerifier
+from langsimp.data.distill import Teacher
+from langsimp.prompts import DISTILL_SYSTEM_PROMPT
+from langsimp.data.sources import fetch_random_paragraphs
+from langsimp.verifier import DifficultyRankingTest, LocalJudge, RewardVerifier
 
-REPO_ROOT = Path(__file__).resolve().parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def load_verifier_samples():

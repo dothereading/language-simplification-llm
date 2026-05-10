@@ -18,9 +18,9 @@ import json
 import random
 from pathlib import Path
 
-from prompts import SFT_SYSTEM_PROMPT
+from langsimp.prompts import SFT_SYSTEM_PROMPT
 
-REPO_ROOT = Path(__file__).resolve().parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_EVAL_PATH = REPO_ROOT / "data" / "eval.jsonl"
 
 

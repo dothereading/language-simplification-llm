@@ -15,12 +15,8 @@ import pytest
 
 
 def _import_target():
-    try:
-        import mlx_data as ds  # type: ignore
-        return ds, "new"
-    except ImportError:
-        import prepare_mlx_data as old  # type: ignore
-        return old, "old"
+    import langsimp.data.mlx_format as ds
+    return ds, "new"
 
 
 mod, flavor = _import_target()

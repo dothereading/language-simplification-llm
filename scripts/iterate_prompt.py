@@ -20,8 +20,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from distill import Teacher  # noqa: E402
-from prompts import DISTILL_SYSTEM_PROMPT  # noqa: E402
+from langsimp.data.distill import Teacher  # noqa: E402
+from langsimp.prompts import DISTILL_SYSTEM_PROMPT  # noqa: E402
 
 
 async def main() -> None:

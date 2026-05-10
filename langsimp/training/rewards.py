@@ -26,7 +26,7 @@ from typing import Optional
 
 from wordfreq import top_n_list
 
-from verifier import BaseJudge, split_sentences
+from langsimp.verifier import BaseJudge, split_sentences
 
 # Default common-word list size. Top-3000 strikes the right balance: the
 # bare top-2000 misses common A2 concrete vocabulary (e.g. "tower",
@@ -284,7 +284,7 @@ def _get_judge():
         return _get_judge._cached
 
     backend = os.environ.get("MEANING_JUDGE_BACKEND", "").lower()
-    from verifier import LocalJudge
+    from langsimp.verifier import LocalJudge
 
     if backend == "openrouter":
         api_key = os.environ.get("OPENROUTER_API_KEY")
@@ -408,7 +408,7 @@ def _variety_cli(args) -> None:
     std per group. GRPO advantage = (reward - mean) / std within a group;
     if std ≈ 0 across most groups, GRPO can't learn — this catches that
     BEFORE we burn training compute."""
-    from inference import load_model_with_adapter, make_generate_fn
+    from langsimp.inference.engine import load_model_with_adapter, make_generate_fn
 
     judge = None
     if args.with_judge:

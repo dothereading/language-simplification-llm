@@ -8,7 +8,7 @@ from __future__ import annotations
 import io
 import pytest
 
-generate = pytest.importorskip("generate", reason="generate.py not implemented yet (RED)")
+generate = pytest.importorskip("langsimp.inference.generate", reason="generate.py not implemented yet (RED)")
 
 
 class TestReadInput:

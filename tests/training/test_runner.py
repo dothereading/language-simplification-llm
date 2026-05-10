@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-train = pytest.importorskip("train", reason="train.py not implemented yet")
+train = pytest.importorskip("langsimp.training.runner", reason="train.py not implemented yet")
 
 
 class TestParseSftLine:

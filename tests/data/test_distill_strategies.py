@@ -5,7 +5,7 @@ from collections import Counter
 
 import pytest
 
-distill = pytest.importorskip("distill", reason="distill.py")
+distill = pytest.importorskip("langsimp.data.distill", reason="distill.py")
 
 
 # Common test fixture

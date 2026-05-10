@@ -11,7 +11,7 @@
 #       → meaning_reward returns a constant 0.5 (no signal, no crash)
 #
 # Run from the repo root:
-#   uv run python mlx_data.py grpo
+#   uv run python -m langsimp.data.mlx_format grpo
 #   bash scripts/train_grpo_mlx.sh
 #
 # Env-var overrides (any subset):
@@ -43,4 +43,4 @@ if [[ -n "${ADAPTER_DIR:-}" ]]; then
     ARGS+=(--adapter-path "$ADAPTER_DIR")
 fi
 
-uv run python train.py "${ARGS[@]}"
+uv run python -m langsimp.training.runner "${ARGS[@]}"

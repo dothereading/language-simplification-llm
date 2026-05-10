@@ -28,4 +28,4 @@ if [[ -n "${ADAPTER_DIR:-}" ]]; then
     ARGS+=(--adapter-path "$ADAPTER_DIR")
 fi
 
-uv run python train.py "${ARGS[@]}"
+uv run python -m langsimp.training.runner "${ARGS[@]}"

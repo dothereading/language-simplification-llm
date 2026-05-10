@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-distill = pytest.importorskip("distill", reason="distill.py not implemented yet (RED)")
+distill = pytest.importorskip("langsimp.data.distill", reason="distill.py not implemented yet (RED)")
 
 
 def _fake_response(text: str):

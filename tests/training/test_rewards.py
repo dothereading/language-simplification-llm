@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import pytest
 
-from verifier import BaseJudge
+from langsimp.verifier import BaseJudge
 
-rewards = pytest.importorskip("rewards", reason="rewards.py not implemented yet (RED)")
+rewards = pytest.importorskip("langsimp.training.rewards", reason="rewards.py not implemented yet (RED)")
 
 
 class StubJudge(BaseJudge):

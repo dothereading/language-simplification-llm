@@ -1,12 +1,12 @@
-"""Model loading and generation primitives shared by eval_harness.py and
-generate.py. Keeps a single canonical code path for "load Gemma + LoRA,
+"""Model loading and generation primitives shared by langsimp.inference.eval_harness and
+langsimp.inference.generate. Keeps a single canonical code path for "load Gemma + LoRA,
 apply the SFT chat template, generate, and clean the output."
 """
 from __future__ import annotations
 
 from typing import Callable, Optional
 
-from prompts import SFT_SYSTEM_PROMPT
+from langsimp.prompts import SFT_SYSTEM_PROMPT
 
 
 # Chat-template stop markers that mlx-lm doesn't always honor on its own.

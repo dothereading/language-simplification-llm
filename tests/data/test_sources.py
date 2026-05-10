@@ -10,12 +10,8 @@ import pytest
 
 
 def _import_module():
-    try:
-        import sources  # type: ignore
-        return sources
-    except ImportError:
-        import wiki_source  # type: ignore
-        return wiki_source
+    import langsimp.data.sources as sources
+    return sources
 
 
 mod = _import_module()
