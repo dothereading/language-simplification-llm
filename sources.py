@@ -5,6 +5,7 @@ be added as additional iterators with the same `WikiParagraph`-shaped output.
 """
 from __future__ import annotations
 
+import os
 import re
 import time
 from dataclasses import dataclass
@@ -13,7 +14,15 @@ from typing import Iterator, Optional
 import requests
 
 REST_RANDOM = "https://en.wikipedia.org/api/rest_v1/page/random/summary"
-USER_AGENT = "language-simplification-llm/0.1 (https://github.com/dothereading; miguelconner4@gmail.com)"
+# Wikipedia's User-Agent policy asks for a tool name, version, and contact
+# method. The contact can be a repo URL (no email required). Set
+# WIKI_USER_AGENT_CONTACT to your fork/repo URL or your own email if you
+# expect to scrape at volume.
+_DEFAULT_CONTACT = "https://github.com/anonymous/language-simplification-llm"
+USER_AGENT = (
+    f"language-simplification-llm/0.1 "
+    f"(+{os.environ.get('WIKI_USER_AGENT_CONTACT', _DEFAULT_CONTACT)})"
+)
 
 
 @dataclass
