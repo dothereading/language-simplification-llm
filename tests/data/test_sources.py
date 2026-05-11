@@ -34,6 +34,39 @@ class TestSplitParagraphs:
         assert out == ["Only one."]
 
 
+class TestRandomSummaryRobustness:
+    """A single bad random article (400 from a malformed redirect, etc.) must
+    not kill the iterator — it should return None so the caller skips and
+    fetches another."""
+
+    def _fake_session(self, status_code: int):
+        class FakeResp:
+            def __init__(self, code):
+                self.status_code = code
+                self.headers = {}
+            def json(self):
+                return {}
+            def raise_for_status(self):
+                if self.status_code >= 400:
+                    import requests
+                    raise requests.HTTPError(f"{self.status_code} error")
+
+        class FakeSession:
+            def get(self, *a, **kw):
+                return FakeResp(status_code)
+        return FakeSession()
+
+    def test_400_returns_none_not_raises(self):
+        # Real failure mode: Wikipedia redirected /random/summary to a
+        # /summary/<title-with-slash> URL that 400'd.
+        sess = self._fake_session(400)
+        assert mod._random_summary(sess, max_retries=2) is None
+
+    def test_404_returns_none(self):
+        sess = self._fake_session(404)
+        assert mod._random_summary(sess, max_retries=2) is None
+
+
 class TestBadTitleRegex:
     @pytest.mark.parametrize("title", [
         "Foo (disambiguation)",

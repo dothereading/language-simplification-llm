@@ -53,8 +53,10 @@ def _random_summary(session: requests.Session, max_retries: int = 5) -> Optional
         if r.status_code >= 500:
             time.sleep(2 ** attempt)
             continue
-        if r.status_code == 404:
-            return None  # redirect target no longer exists; caller will skip
+        if 400 <= r.status_code < 500:
+            # 404 = redirect target gone; 400 = malformed redirected URL
+            # (e.g. a title containing "/"). Either way, skip this draw.
+            return None
         r.raise_for_status()
         return r.json()
     return None
